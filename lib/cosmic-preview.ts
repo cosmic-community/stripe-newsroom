@@ -10,9 +10,25 @@ interface GetCosmicResult {
   previewToken: string | undefined
 }
 
+/**
+ * Read the `cosmic_preview` cookie without assuming a request scope exists.
+ *
+ * `cookies()` throws when it is called outside of a request, which happens
+ * during static generation: `generateStaticParams`, `app/sitemap.ts` and any
+ * build-time prerendering all run before a request exists. There is never a
+ * preview cookie in those contexts, so treat the failure as "no preview".
+ */
+async function readPreviewToken(): Promise<string | undefined> {
+  try {
+    const cookieStore = await cookies()
+    return cookieStore.get('cosmic_preview')?.value
+  } catch {
+    return undefined
+  }
+}
+
 export async function getCosmic(): Promise<GetCosmicResult> {
-  const cookieStore = await cookies()
-  const previewToken = cookieStore.get('cosmic_preview')?.value
+  const previewToken = await readPreviewToken()
 
   const cosmic = previewToken
     ? createBucketClient({
